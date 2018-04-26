@@ -131,8 +131,7 @@ class ControllerModuleAvantajbizde extends Controller
     private function listProductOptions($product_id = null)
     {
         $product_id = $this->db->escape($product_id);
-        if($product_id == null){
-            $query = "SELECT oc_product.product_id as product_id,
+        $query = "SELECT oc_product.product_id as product_id,
                   oc_product.model as product_model,
                   oc_product.ean as product_ean,
                   oc_product.sku as product_sku,
@@ -155,32 +154,8 @@ class ControllerModuleAvantajbizde extends Controller
                   ON oc_option_value_description.option_value_id =  oc_product_option_value.option_value_id 
                   INNER JOIN oc_option_description 
                   ON oc_option_description.option_id =  oc_option_value_description.option_id";
-        }
-        else{
-            $query = "SELECT oc_product.product_id as product_id,
-                  oc_product.model as product_model,
-                  oc_product.ean as product_ean,
-                  oc_product.sku as product_sku,
-                  oc_product.upc as product_upc,
-                  oc_product.jan as product_jan,
-                  oc_product.isbn as product_isbn,
-                  oc_product.mpn as product_mpn,
-                  oc_product.quantity as product_quantity,
-                  oc_product.price as product_price,
-                  oc_product_option_value.product_option_value_id as product_option_value_id,
-                  oc_product_option_value.quantity as product_option_value_quantity,
-                  oc_product_option_value.subtract as product_option_value_substract,
-                  oc_product_option_value.price as product_option_value_price,
-                  oc_option_value_description.name as option_value_name,
-                  oc_option_description.name as option_name 
-                  FROM oc_product_option_value 
-                  INNER JOIN oc_product 
-                  ON oc_product.product_id =  oc_product_option_value.product_id 
-                  INNER JOIN oc_option_value_description 
-                  ON oc_option_value_description.option_value_id =  oc_product_option_value.option_value_id 
-                  INNER JOIN oc_option_description 
-                  ON oc_option_description.option_id =  oc_option_value_description.option_id 
-                  WHERE oc_product.product_id = '$product_id'";
+        if($product_id != null){
+            $query .= " WHERE oc_product.product_id = $product_id";
         }
         $query = str_replace("oc_", DB_PREFIX, $query);
         return $this->db->query($query)->rows;
