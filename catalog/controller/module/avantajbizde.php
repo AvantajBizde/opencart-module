@@ -83,6 +83,7 @@ class ControllerModuleAvantajbizde extends Controller
         $descriptions = $this->getProductDescription();
         $list = [];
         foreach($products as $product){
+            $product["product_category_path"] = $this->getProductCategoryPath($product["product_id"]);
             $product["options"] = $this->getByKey("product_id",$product["product_id"],$options);
             $images_data = $this->getByKey("product_id",$product["product_id"],$images);
             $product["images"] = [];
@@ -251,9 +252,51 @@ class ControllerModuleAvantajbizde extends Controller
     }
 
     private function listProducts(){
-        $query = "SELECT * FROM oc_product";
+        $query = "SELECT 
+                  oc_product.*,
+                  oc_category_description.category_id as product_category_id,
+                  oc_category_description.name as product_category_name
+                  FROM oc_product 
+                  INNER JOIN oc_product_to_category 
+                  ON oc_product.product_id = oc_product_to_category.product_id
+                  INNER JOIN oc_category_description 
+                  ON oc_product_to_category.category_id = oc_category_description.category_id";
         $query = str_replace("oc_",DB_PREFIX,$query);
         return $this->db->query($query)->rows;
+    }
+
+    private function getProductCategoryPath($product_id, $category_id = null){
+        $result = [];
+        if($category_id != null){
+            $category_id = $this->db->escape($category_id);
+            $query = "SELECT oc_category.category_id, oc_category.parent_id, oc_category_description.name
+                      FROM oc_category
+                      INNER JOIN oc_category_description
+                      ON oc_category_description.category_id = oc_category.category_id
+                      WHERE oc_category.category_id = $category_id";
+            $query = str_replace("oc_",DB_PREFIX,$query);
+            $category = $this->db->query($query)->row;
+            $result[] = $category["name"];
+            if($category["parent_id"] != 0){
+                $result[] = $this->getProductCategoryPath($product_id,$category["parent_id"]);
+            }
+        }
+        else{
+            $product_id = $this->db->escape($product_id);
+            $query = "SELECT oc_category.category_id, oc_category.parent_id, oc_category_description.name
+                      FROM oc_product_to_category
+                      INNER JOIN oc_category_description
+                      ON oc_category_description.category_id = oc_product_to_category.category_id
+                      INNER JOIN oc_category ON oc_category.category_id = oc_product_to_category.category_id
+                      WHERE product_id = $product_id";
+            $query = str_replace("oc_",DB_PREFIX,$query);
+            $category = $this->db->query($query)->row;
+            $result[] = $category["name"];
+            if($category["parent_id"] != 0){
+                $result[] = $this->getProductCategoryPath($product_id,$category["parent_id"]);
+            }
+        }
+        return implode(" / ",array_reverse($result));
     }
 
     //</editor-fold>
