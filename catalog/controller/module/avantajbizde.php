@@ -83,12 +83,13 @@ class ControllerModuleAvantajbizde extends Controller
         $descriptions = $this->getProductDescription();
         $list = [];
         foreach($products as $product){
+            $product["image"] = trim(HTTP_SERVER,'/')."/".trim(PRODUCTS_IMAGE_PATH,'/')."/".$product["image"];
             $product["product_category_path"] = $this->getProductCategoryPath($product["product_id"]);
             $product["options"] = $this->getByKey("product_id",$product["product_id"],$options);
             $images_data = $this->getByKey("product_id",$product["product_id"],$images);
             $product["images"] = [];
             foreach ($images_data as $image){
-                $product["images"][] = trim(HTTP_SERVER,'/')."/image/".$image["image"];
+                $product["images"][] = trim(HTTP_SERVER,'/')."/".trim(PRODUCTS_IMAGE_PATH,'/')."/".$image["image"];
             }
             $description_data = $this->findByKey("product_id",$product["product_id"],$descriptions);
             if($description_data != null){
@@ -182,22 +183,14 @@ class ControllerModuleAvantajbizde extends Controller
 
     private function listProductImages($product_id = null){
         $product_id = $this->db->escape($product_id);
-        if($product_id == null){
-            $query = "SELECT 
+        $query = "SELECT 
                   oc_product.product_id, 
                   oc_product.model, 
                   oc_product_image.image 
                   FROM oc_product_image 
                   INNER JOIN oc_product ON oc_product.product_id = oc_product_image.product_id";
-        }
-        else{
-            $query = "SELECT 
-                  oc_product.product_id, 
-                  oc_product.model, 
-                  oc_product_image.image 
-                  FROM oc_product_image 
-                  INNER JOIN oc_product ON oc_product.product_id = oc_product_image.product_id 
-                  WHERE oc_product.product_id = $product_id";
+        if($product_id != null){
+            $query .= " WHERE oc_product.product_id = $product_id";
         }
         $query = str_replace("_oc",DB_PREFIX,$query);
         return $this->db->query($query)->rows;
@@ -205,22 +198,14 @@ class ControllerModuleAvantajbizde extends Controller
 
     private function getProductDescription($product_id = null){
         $product_id = $this->db->escape($product_id);
-        if($product_id == null){
-            $query = "SELECT
+        $query = "SELECT
             oc_product.product_id,
             oc_product.model,
             oc_product_description.description
             FROM oc_product_description
             INNER JOIN oc_product ON oc_product.product_id = oc_product_description.product_id";
-        }
-        else{
-            $query = "SELECT
-            oc_product.product_id,
-            oc_product.model,
-            oc_product_description.description
-            FROM oc_product_description
-            INNER JOIN oc_product ON oc_product.product_id = oc_product_description.product_id
-            WHERE oc_product.product_id = $product_id";
+        if($product_id != null){
+            $query .= " WHERE oc_product.product_id = $product_id";
         }
         $query = str_replace("oc_",DB_PREFIX,$query);
         return $this->db->query($query)->rows;
