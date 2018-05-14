@@ -86,14 +86,17 @@ class ControllerModuleAvantajbizde extends Controller
             $product["image"] = trim(HTTP_SERVER,'/')."/".trim(PRODUCTS_IMAGE_PATH,'/')."/".$product["image"];
             $product["product_category_path"] = $this->getProductCategoryPath($product["product_id"]);
             $product["options"] = $this->getByKey("product_id",$product["product_id"],$options);
+            $product["tech_specs"] = $this->getProductTechSpecs(intval($product["product_id"]));
             $images_data = $this->getByKey("product_id",$product["product_id"],$images);
             $product["images"] = [];
             foreach ($images_data as $image){
                 $product["images"][] = trim(HTTP_SERVER,'/')."/".trim(PRODUCTS_IMAGE_PATH,'/')."/".$image["image"];
             }
             $description_data = $this->findByKey("product_id",$product["product_id"],$descriptions);
+            $product["name"] = null;
             if($description_data != null){
                 $product["description"] = $description_data["description"];
+                $product["name"] = $description_data["name"];
             }
             $list[] = ["product" => $product];
         }
@@ -201,7 +204,8 @@ class ControllerModuleAvantajbizde extends Controller
         $query = "SELECT
             oc_product.product_id,
             oc_product.model,
-            oc_product_description.description
+            oc_product_description.description,
+            oc_product_description.name
             FROM oc_product_description
             INNER JOIN oc_product ON oc_product.product_id = oc_product_description.product_id";
         if($product_id != null){
@@ -211,16 +215,32 @@ class ControllerModuleAvantajbizde extends Controller
         return $this->db->query($query)->rows;
     }
 
-    private function listProducts(){
+    private function getProductTechSpecs($product_id = null){
         $query = "SELECT 
-                  oc_product.*,
-                  oc_category_description.category_id as product_category_id,
-                  oc_category_description.name as product_category_name
-                  FROM oc_product 
-                  INNER JOIN oc_product_to_category 
-                  ON oc_product.product_id = oc_product_to_category.product_id
-                  INNER JOIN oc_category_description 
-                  ON oc_product_to_category.category_id = oc_category_description.category_id";
+                  oc_attribute_description.name as attribute_name, 
+                  oc_product_attribute.text as value,
+                  oc_product_attribute.product_id 
+                  FROM oc_product_attribute
+                  INNER JOIN oc_attribute_description 
+                  ON oc_attribute_description.attribute_id = oc_product_attribute.attribute_id";
+        if($product_id != null){
+            $product_id = $this->db->escape($product_id);
+            $query .= " WHERE oc_product_attribute.product_id = $product_id";
+        }
+        $query = str_replace("oc_",DB_PREFIX, $query);
+        return $this->db->query($query)->rows;
+    }
+
+    private function listProducts(){
+        $query = "SELECT
+                    oc_product.*,
+                    oc_category_description.category_id as product_category_id,
+                    oc_category_description.name as product_category_name
+                  FROM oc_product
+                    INNER JOIN oc_product_to_category
+                      ON oc_product.product_id = oc_product_to_category.product_id
+                    LEFT JOIN oc_category_description
+                      ON oc_product_to_category.category_id = oc_category_description.category_id";
         $query = str_replace("oc_",DB_PREFIX,$query);
         return $this->db->query($query)->rows;
     }
